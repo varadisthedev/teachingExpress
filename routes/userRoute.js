@@ -13,13 +13,16 @@ if (!process.env.NODE_ENV) {
 
 const router = express.Router();
 // Cookie settings for JWT auth
-const cookieOptions = {
-  httpOnly: true, // JS cannot read token from document.cookie
-  secure: process.env.NODE_ENV === "production", // send only over HTTPS in production
-  sameSite: "lax", // basic CSRF protection for cross-site requests
-  maxAge: 60 * 60 * 1000, // 1 hour
+const baseCookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
 };
 
+const cookieOptions = {
+  ...baseCookieOptions,
+  maxAge: 60 * 60 * 1000,
+};
 // Register a new user
 router.post("/register", async (req, res) => {
   const { username, email, password } = req.body;
@@ -69,15 +72,17 @@ router.post("/login", async (req, res) => {
     );
 
     res.cookie("token", token, cookieOptions);
+    // storing cookie in the token variable and sending it
 
     res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        role: user.role,
-      },
+      token: token, // Include the token in the response
+      //   user: {
+      //     id: user._id,
+      //     username: user.username,
+      //     email: user.email,
+      //     role: user.role,
+      //   },
     });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -86,19 +91,13 @@ router.post("/login", async (req, res) => {
 
 router.post("/logout", (req, res) => {
   // clear auth cookie during logout
-  try{
-    res.clearCookie("token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-  });
+  try {
+    res.clearCookie("token", baseCookieOptions);
 
-  res.status(200).json({ message: "Logged out successfully" });
-  }
-  catch(error){
+    res.status(200).json({ message: "Logged out successfully" });
+  } catch (error) {
     res.status(500).json({ message: "Server error during logout" });
   }
-  
 });
 
 router.get("/me", verifyToken, async (req, res) => {
