@@ -5,11 +5,11 @@ import connectMongo from "./connectmongo.js";
 import userRoute from "./routes/userRoute.js";
 import adminRoute from "./routes/adminRoute.js";
 import cookieParser from "cookie-parser";
-
+import chalk from "chalk";
 dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
-
+const log = console.log;
 // Connect to MongoDB
 connectMongo();
 
@@ -30,5 +30,5 @@ app.get("/", (req, res) => {
   res.send("Welcome to the Express API");
 });
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  log(chalk.blue(`##Server is running on: http://localhost:${PORT}/`));
 });
