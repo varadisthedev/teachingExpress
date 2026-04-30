@@ -1,5 +1,6 @@
-// create the client and use everywhere
-import redis from "ioredisredis";
+// redis connections are expensive, so we create a single shared instance
+// that can be imported and used across the app
+import Redis from "ioredis";
 import dotenv from "dotenv";
 import chalk from "chalk";
 
@@ -17,9 +18,11 @@ if (!process.env.REDIS_URL) {
 
 const redis = new Redis(process.env.REDIS_URL, {
   // If Redis is down, don't crash the app just log and move on
-  lazyConnect: true, // gives app time to connect and not crash immediately if Redis is unavailable
+  lazyConnect: true, // gives app time to connect and not crash immediately at startup if Redis is unavailable
 
-  // Retry 3 times with increasing delay before giving up
+  // callback function by ioredis
+  // ioredis increment times variable each time it tries to reconnect, so we can use that to limit retries
+  // expects a number (ms to wait before next retry) or null to stop retrying
   retryStrategy(times) {
     if (times > 3) {
       log(chalk.red("Redis: max retries reached. Giving up."));
@@ -36,9 +39,10 @@ redis.on("connect", () => {
   log(chalk.green("### Connected to Redis successfully!"));
 });
 
+// below logging is imp in prodduction, it doesnt crash reddis but logs errors
+// in short, they are event listeners
 redis.on("error", (err) => {
   log(chalk.red("### Redis error:"), err.message);
-  // Notice: we log but do NOT crash — app keeps running
 });
 
 redis.on("reconnecting", () => {
